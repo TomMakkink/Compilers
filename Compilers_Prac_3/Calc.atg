@@ -1,0 +1,23 @@
+/* 	Group G: Luke des Tombe, Tom Makkink, Jeff Skeen 
+ 	Compilers Practical 3: Task 1 */ 
+COMPILER Calc  $CN
+/* Simple four function calculator
+   P.D. Terry, Rhodes University, 2017 */
+
+CHARACTERS
+  digit      = "0123456789" .
+  hexdigit   = digit + "ABCDEF" .
+
+TOKENS
+  decNumber  = digit { digit } .
+  hexNumber  = "$" hexdigit { hexdigit } .
+  floatNumber = digit {digit} "." {digit} | {digit} "." digit { digit} .
+
+IGNORE CHR(0) .. CHR(31)
+
+PRODUCTIONS
+  Calc       = { Expression "=" } EOF .
+  Expression = Term { "+" Term  |  "-" Term } .
+  Term       = Factor { "*" Factor |  "/" Factor | "^" Factor } .
+  Factor     = ["-" | "+"] (decNumber | hexNumber | floatNumber | "sqrt(" Expression ")" | "(" Expression ")") .
+END Calc.

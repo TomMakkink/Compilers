@@ -1,0 +1,22 @@
+/* Jeffrey Skeen, Tom Makkink, Luke des Tombe Group G */
+/* We assuming that each staff member will have at most one
+qualification of each type */
+COMPILER Staff $CN
+
+CHARACTERS
+	CapLetter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" .
+	LowLetter = "abcdefghijklmnopqrstuvwxyz" .
+
+TOKENS
+	Name = CapLetter {LowLetter} .
+	Initial = CapLetter"." .
+
+IGNORE CHR(0) .. CHR(31)
+	
+PRODUCTIONS
+	Staff         = { FullName "." } EOF .
+	FullName 	  = [ Title ] Names ["," Qualification] .  
+	Title 		  = "Mr" | "Mrs" | "Ms" | "Prof" | "Professor" | "Doctor" | "Dr" .
+	Names 		  = (Name | Initial) {Name | Initial} .  
+	Qualification = ["BSc" | "BSc," | "BSc(Hons)" | "BSc(Hons),"] ["MSc" | "MSc,"] ["PhD"] .	
+END Staff.
