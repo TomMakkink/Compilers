@@ -1,0 +1,18 @@
+Task 9: Luke des Tombe, Jefferey Skeen, Tom Makkink
+
+Limit: 4000 and the number of iterations:1000
+
+Emulator		|		Sieve2.Pvm			||			Sieve3.pvm
+
+Asm1.exe		|		4.04s				||				0.30s
+
+
+Asm2.exe 		|		2.22s				||     			0.20s
+
+
+The results of the timings are as we expected, with Sieve3.pvm being faster than Sieve2.pvm, and Asm2.exe 
+performing better than Asm1.exe. Sieve3 was faster due to the additional op codes that were utilised, 
+which meant that fewer fetch cycles were used to execute the same functionality, which improved 
+overall performance. Asm2.exe performed better than Asm1.exe because no auxiliary methods were called, as
+memory was modified directly. 
+

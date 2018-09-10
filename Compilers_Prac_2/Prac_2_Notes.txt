@@ -1,0 +1,74 @@
+Compilers Practical 2
+Group G: Tom, Luke, Jeff
+
+Task 3
+a) The code checks both conditions before allowing it to exit the loop. 
+
+  16   LDA      2		  ; while (n != 0)
+  18   LDV
+  19   LDC      0
+  21   CNE				  		   
+  22   LDA      1         ; && while (i < max)
+  24   LDV
+  25   LDC      10
+  27   CLT
+  28   AND                  
+  29   BZE      56		  ; exit loop 
+  
+  The Branch code in instruction 29 only executes after both conditions have been 
+  checked. 
+  
+ b) Please see Reverse.PVM. 
+ 
+ c) Modify the following lines:
+ 
+  16   LDA      2		  ; while (!n == 0)
+  18   LDV
+  19   NOT 
+  20   BZE      56  
+  22   LDA      1         ; && while (i < max)
+  24   LDV
+  25   LDC      10
+  27   CLT                 
+  28   BZE      56		  ; exit loop 
+  
+ 
+Task 4: 
+Limit = 40 000
+Iterations = 1000
+ASM1 sieve1.pvm = 0.65s
+ASM2 sieve1.pvm = 0.20s
+
+We expected ASM1 to be slower than ASM2, and the results confirmed this. 
+This is due to the fact that ASM1 uses the PVMPushPop.cs interpreter, while 
+the PvmInline.cs uses the in-line interpreter. The in-line interpreter is 
+faster because it modifies the memory array directly, while the push-pop method 
+makes use of auxiliary methods to modify memory. 
+
+Task 9: 
+
+Limit: 4000 
+Number of iterations:1000
+
+Emulator		|		Sieve2.Pvm			||			Sieve3.pvm
+
+Asm1.exe		|		4.04s				||				0.30s
+
+
+Asm2.exe 		|		2.22s				||     			0.20s
+
+
+The results of the timings are as we expected, with Sieve3.pvm being faster than Sieve2.pvm, and Asm2.exe 
+performing better than Asm1.exe. Sieve3 was faster due to the additional op codes that were utilised, 
+which meant that fewer fetch cycles were used to execute the same functionality, which improved 
+overall performance. Asm2.exe performed better than Asm1.exe because no auxiliary methods were called, as
+memory was modified directly. 
+
+
+
+
+
+
+
+
+

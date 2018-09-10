@@ -1,0 +1,12 @@
+ASSEM
+BEGIN
+  {    0 } DSP      2
+  {    2 } LDA      0
+  {    4 } LDC      -1
+  {    6 } STO     
+  {    7 } LDA      1
+  {    9 } LDA      0
+  {   11 } LDV     
+  {   12 } STO     
+  {   13 } HALT    
+END.

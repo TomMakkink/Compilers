@@ -1,0 +1,41 @@
+ASSEM
+BEGIN
+  {    0 } DSP      6
+  {    2 } LDA      5
+  {    4 } LDC      100
+  {    6 } ANEW    
+  {    7 } STO     
+  {    8 } LDC_0   
+  {    9 } STL_0   
+  {   10 } LDA      3
+  {   12 } INPC    
+  {   13 } LDL_3   
+  {   14 } LDC      46
+  {   16 } CNE     
+  {   17 } BZE      40
+  {   19 } LDL_3   
+  {   20 } LDC      32
+  {   22 } CGT     
+  {   23 } BZE      38
+  {   25 } LDL     
+  {   26 } LDV     
+  {   27 } LDL_0   
+  {   28 } LDXA    
+  {   29 } LDL_3   
+  {   30 } LOW     
+  {   31 } STO     
+  {   32 } LDA_0   
+  {   33 } LDL_0   
+  {   34 } INC     
+  {   35 } STO     
+  {   36 } LDA_3   
+  {   37 } INPC    
+  {   38 } BRN      13
+  {   40 } LDL     
+  {   41 } LDV     
+  {   42 } LDC_1   
+  {   43 } LDXA    
+  {   44 } LDV     
+  {   45 } PRNC    
+  {   46 } HALT    
+END.

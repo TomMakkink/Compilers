@@ -1,0 +1,115 @@
+; Task 5 
+; Group G: Luke des Tombe, Tom Makkink, Jeffrey Skeen 
+	0	DSP		6	; var0 = n, var1 = low, var2 = high, var3 = item, var4 = isPalindrome, var5 = list 
+	2	LDA 	5	; int [] list = new int [10]
+	4	LDC		10
+	6	ANEW
+	7	STO 
+	8 	LDA 	0 	; n = 0; 
+	10 	LDC 	0 
+	12	STO 
+	13 	LDA 	3	; read(item);
+	15 	INPI 
+	16 	LDA 	3	; LOOP1 while (item != 0)
+	18 	LDV 
+	19 	LDC 	0
+	21 	CNE
+	22	BZE 	49	 ; LOOP1 exit loop				;---------Tom added----------;
+	24	LDA 	5	 ; List[n] = item 
+	26	LDV
+	27 	LDA 	0 
+	29	LDV 
+	30 	LDXA
+	31 	LDA		3
+	33	LDV
+	34 	STO 
+	35	LDA 	0	; n = n + 1
+	37	LDA		0		
+	39	LDV 	
+	40	LDC 	1
+	42	ADD		
+	43	STO
+	44	LDA 	3	; READ(ITEM)
+	46	INPI
+;--------Tom Added---------;
+	47  BRN 	16	; LOOP1 repeat					;----branch----;
+	49 	LDA 	4	; isPalindrome = true
+	51	LDC 	1	; 1 representing value true 
+	53 	STO
+	54	LDA 	1	; low = 0; 
+	56 	LDC 	0	; 
+	58 	STO 
+	59 	LDA 	2	; high = n - 1 
+	61 	LDA 	0	
+	63	LDV 
+	64	LDC 	1
+	66	SUB
+	67 	STO 
+	68	LDA 	1	; LOOP2 while ( low < n - 1)
+	70	LDV 
+	71	LDA		0
+	73	LDV
+	74	LDC		1
+	75	SUB 
+	76	CLT 
+	77	BZE		120	 ; LOOP2 exit 
+	79	LDA 	5    ; IF1	if (list[low] != list[high])
+	81 	LDV 
+	82 	LDA 	1
+	84	LDV		
+	85 	LDXA
+	86 	LDV 
+	87 	LDA		5
+	89	LDV 
+	90 	LDA		2
+	91 	LDV		
+	92	LDXA 
+	93	LDV 
+	94 	CNE 
+	95 	BZE 	102		; IF1 exit 					 ;------branch----;
+	97 	LDA		4		; isPalindrome = false 
+	99 	LDC 	0 
+	101 STO
+	102 LDA 	1		;low = low + 1;
+	104 LDA 	1 
+	106	LDV 
+	107	LDC 	1 
+	109	ADD 
+	110	STO 
+	111	LDA 	2		; high = high - 1;
+	113	LDA 	2		
+	115	LDV 	
+	116	LDC 	1 
+	117	SUB
+	118 STO
+	119	BRN 	68 		; LOOP2 Repeat 					;------branch----;
+	121	HALT
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

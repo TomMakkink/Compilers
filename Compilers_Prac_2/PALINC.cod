@@ -1,0 +1,72 @@
+ASSEM
+BEGIN
+  {    0 } DSP      6
+  {    2 } LDA      5
+  {    4 } LDC      100
+  {    6 } ANEW    
+  {    7 } STO     
+  {    8 } LDC_0   
+  {    9 } STL_0   
+  {   10 } LDA      3
+  {   12 } INPC    
+  {   13 } LDL_3   
+  {   14 } LDC      46
+  {   16 } CNE     
+  {   17 } BZE      38
+  {   19 } LDL_3   
+  {   20 } LDC      32
+  {   22 } CGT     
+  {   23 } BZE      34
+  {   25 } LDL     
+  {   26 } LDV     
+  {   27 } LDL_0   
+  {   28 } LDXA    
+  {   29 } LDL_3   
+  {   30 } LOW     
+  {   31 } STO     
+  {   32 } LDA_0   
+  {   33 } INC     
+  {   34 } LDA_3   
+  {   35 } INPC    
+  {   36 } BRN      13
+  {   38 } LDC_1   
+  {   39 } STL     
+  {   40 } LDA      49
+  {   42 } STL_1   
+  {   43 } LDL_0   
+  {   44 } LDC_1   
+  {   45 } SUB     
+  {   46 } STL_2   
+  {   47 } LDL_1   
+  {   48 } LDL_0   
+  {   49 } LDC_1   
+  {   50 } SUB     
+  {   51 } CLT     
+  {   52 } BZE      76
+  {   54 } LDL     
+  {   55 } LDV     
+  {   56 } LDL_1   
+  {   57 } LDXA    
+  {   58 } LDV     
+  {   59 } LDL     
+  {   60 } LDV     
+  {   61 } LDL_2   
+  {   62 } LDXA    
+  {   63 } LDV     
+  {   64 } CNE     
+  {   65 } BZE      70
+  {   67 } LDC_0   
+  {   68 } STL     
+  {   69 } LDA      38
+  {   71 } INC     
+  {   72 } LDA_2   
+  {   73 } DEC     
+  {   74 } BRN      47
+  {   76 } LDL     
+  {   77 } LDA      30
+  {   79 }         
+  {   80 } PRNS     "Palindromic Sequence"
+  {   82 } BRN      86
+  {   84 } PRNS     "Non-palindromic sequence"
+  {   86 } HALT    
+END.

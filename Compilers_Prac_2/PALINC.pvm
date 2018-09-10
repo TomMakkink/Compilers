@@ -1,0 +1,82 @@
+; Task 5 
+; Group G: Luke des Tombe, Tom Makkink, Jeffrey Skeen 
+	0	DSP		6		; var0 = n, var1 = low, var2 = high, var3 = ch, var4 = isPalindrome, var5 = str
+	2	LDA		5		; char [] str = new char [100]
+	4	LDC		100 
+	6	ANEW 
+	7	STO
+	8	LDC_0			; n = 0
+	9 	STL_0	
+	10	LDA		3		; read(ch)
+	12	INPC 
+	13	LDL_3 			; LOOP1 while (ch != '.')
+	14 	LDC 	46 
+	16 	CNE 
+	17 	BZE 	38		; LOOP1 exit 
+	19	LDL_3 			; IF1	if (char > ' ')
+	20 	LDC 	32 
+	22	CGT 
+	23	BZE 	34		; IF1 exit 
+	25 	LDL 	5		; str[n] = lower(ch)
+	27 	LDL_0 
+	28 	LDXA 	
+	29	LDL_3
+	30 	LOW 
+	31 	STO 
+	32 	LDA_0 			; n++			
+	33 	INC 
+	34 	LDA_3			; read(ch)
+	35	INPC 
+	36 	BRN 	13 		; LOOP1 repeat 
+	38 	LDC_1 			; isPalindrome = true 
+	39 	STL 	4 		
+	41 	LDC_0			; low = 0 
+	42	STL_1 
+	43 	LDL_0			; high = n - 1
+	44 	LDC_1 
+	45 	SUB 
+	46	STL_2 
+	47 	LDL_1			; LOOP2	while (low < n - 1)
+	48 	LDL_0 
+	49 	LDC_1
+	50	SUB 
+	51	CLT 
+	52 	BZE 	76		; LOOP2 exit 
+	54 	LDL 	5 		; IF2 if (str[low] != str[high])
+	56	LDL_1 
+	57 	LDXA 
+	58 	LDV 
+	59 	LDL		5 
+	61 	LDL_2 
+	62 	LDXA 
+	63	LDV	
+	64 	CNE 
+	65 	BZE 	70		; IF2 exit 
+	67	LDC_0			; isPalindrome = false
+	68 	STL		4 
+	70 	LDA_1			; low++
+	71	INC 
+	72 	LDA_2			; high--
+	73 	DEC 
+	74 	BRN 	47 		; LOOP2 repeat 
+	76 	LDL		4 		; IF2 	if (isPalindrome)
+	78	BZE 	84		; IF2 exit 						
+	80	PRNS 	"Palindromic Sequence"		;write("Palindromic sequence")
+	82	BRN 	86										
+	84	PRNS 	"Non-palindromic sequence"	; else write("Non-palindromic sequence")
+	86 	HALT
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
