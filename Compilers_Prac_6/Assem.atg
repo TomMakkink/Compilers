@@ -1,0 +1,155 @@
+using Library;
+using System.Collections.Generic;
+
+COMPILER Assem $NC
+/* Simple assembler for the PVM - C# version
+   P.D. Terry, Rhodes University, 2015 */
+
+  const bool known = true;
+
+  public static OutFile pretty;
+
+IGNORECASE
+
+CHARACTERS
+  lf         = CHR(10) .
+  control    = CHR(0) .. CHR(31) .
+  space      = CHR(32) .
+  letter     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" .
+  digit      = "0123456789" .
+  stringCh   = ANY - '"' - control .
+  all        = ANY - lf - control . 
+
+TOKENS
+  identifier = letter { letter | digit } .
+  number     = [ '+' | '-' ] digit { digit } .
+  label      = letter { letter | digit } ":" .
+  stringLit  = '"' { stringCh } '"' .
+  comment    = ";" { all } .
+  EOL        = lf .
+
+COMMENTS FROM "{" TO "}"
+//COMMENTS FROM ";" TO lf 
+
+IGNORE CHR(9) .. CHR(13) - lf
+
+PRODUCTIONS
+  Assem
+  = {EOL} "ASSEM" {EOL} "BEGIN"  (. pretty.Write("\nASSEM\nBEGIN"); .) 
+       { Statement }                
+    "END" "."                    (. LabelTable.CheckLabels(); 
+                                    pretty.WriteLine();
+                                    pretty.Close(); .)
+    { EOL }
+   .
+
+  Statement
+  = ( Label |                    (. pretty.Write("", 8); .)                   
+  )
+  (( OneWord | TwoWord | WriteString | Branch)
+  |                              (. pretty.Write("",14); .)        
+  )      
+  [ Comment ] EOL 
+                                 (. pretty.WriteLine(); .) 
+  . 
+  
+  Comment = comment              (. pretty.Write(token.val, -30); .)
+  .
+
+  OneWord
+  = (   "ADD"  | "AND"  | "ANEW" | "CEQ"  | "CGE"  | "CGT"  | "CLE"  | "CLT"
+      | "CNE"  | "DIV"  | "HALT" | "INPB" | "INPI" | "LDV"  | "LDXA" | "MUL"
+      | "NEG"  | "NOP"  | "NOT"  | "OR"   | "PRNB" | "PRNI" | "PRNL" | "REM"
+      | "STO"  | "SUB"  | "LDA_0"| "LDA_1"| "LDA_2"| "LDA_3"| "LDL_0"| "LDL_1"
+      | "LDL_2"| "LDL_3"| "STL_0"| "STL_1"| "STL_2"| "STL_3"| "LDC_0"| "LDC_1"
+      | "LDC_2"| "LDC_3"| "INC"  | "DEC"  | "ISLET"| "I2C" )         
+                                 (. pretty.Write(token.val, -14); 
+                                    CodeGen.OneWord(token.val); .)
+  .
+
+  TwoWord                        (. int value; string name; .)
+  = ( "DSP" | "LDC" | "LDA" | "LDL" | "STL")    
+                                 (. string mnemonic = token.val; 
+                                 .)
+     (Number<out value> 
+                                 (. List<string> validOpCode = 
+                                      new List<string> {"LDC", "LDA", "LDL", "STL"}; 
+                                        
+                                    if (validOpCode.Contains(mnemonic) && value <= 3){
+                                           CodeGen.OneWord(mnemonic + "_" + value);
+                                    }
+                                    else CodeGen.TwoWord(mnemonic, value); 
+                                    pretty.Write(mnemonic + " " + value, -14);
+                                    .) 
+
+    | Ident<out name>                 (. 
+                                    int offset = VarTable.FindOffSet(name);
+                                    pretty.Write(mnemonic + " " + offset, -14); 
+                                    CodeGen.TwoWord(mnemonic, offset); 
+                                 .)                                    
+    ) 
+     .
+ 
+  Number<out int value> 
+
+  = number                       (. try {
+                                      value = Convert.ToInt32(token.val);
+                                    } catch (Exception ) {
+                                      value = 0; SemError("number too large");
+                                    } .)
+ .
+
+  WriteString                    (. string str; .)
+  = "PRNS" StringConst<out str>  (. pretty.Write("PRNS " + "\"" + str +"\"", -14);
+                                    CodeGen.WriteString(str); .)
+  .
+
+  StringConst<out string str>
+  = stringLit                    (. str = token.val.Substring(1, token.val.Length - 2);
+                                    str = str.Replace("\\n", "\n");
+                                    str = str.Replace("\\t", "\t");
+                                    str = str.Replace("\\f", "\f");
+                                    //str = str.Replace("\\"", "\"");
+                                    str = str.Replace("\\'", "\'");
+                                 .)
+  .
+
+  Label
+  = label                        (. string name = token.val.Substring(0, token.val.Length - 1).ToLower();
+                                    LabelEntry entry = LabelTable.Find(name);
+                                    if (entry == null)
+                                      LabelTable.Insert(new LabelEntry(name, new Label(known),-1 * CodeGen.GetCodeLength()));
+                                    else if (entry.label.IsDefined())
+                                      SemError("redefined label");
+                                    else{ 
+                                        entry.AddReference(-1 * CodeGen.GetCodeLength()); 
+                                        entry.label.Here(); 
+                                    } 
+                                    pretty.Write(token.val + " ", 8);
+                                    .)
+  .
+
+  Branch                         (. int target;
+                                    string name;
+                                    Label lab; .)
+  = ( "BRN" | "BZE" )            (. string mnemonic = token.val; .)
+    (   Number<out target>       (. pretty.Write(mnemonic + " " + target, -14 );
+                                    CodeGen.TwoWord(mnemonic, target); .)
+      | Ident<out name>          (. LabelEntry entry = LabelTable.Find(name);
+                                    if (entry == null) {
+                                      lab = new Label(!known);
+                                      LabelTable.Insert(new LabelEntry(name, lab, CodeGen.GetCodeLength()));
+                                    }
+                                    else {
+                                        lab = entry.label;
+                                        entry.AddReference( CodeGen.GetCodeLength()); 
+                                    }
+                                    pretty.Write(mnemonic + " " + name.ToUpper(), -14); 
+                                    CodeGen.Branch(mnemonic, lab); .)
+    ) .
+
+  Ident<out string name>
+  = identifier                   (. name = token.val.ToLower(); .)
+  .
+
+END Assem.

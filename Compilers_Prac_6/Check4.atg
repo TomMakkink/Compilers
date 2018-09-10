@@ -1,0 +1,60 @@
+using Library;
+using System.Collections.Generic;
+
+COMPILER Check4 $CN
+// Group G: Tom Makkink, Luke des Tombe, Jeff Skeen
+
+static List<int> IPList = new List<int> ();
+static List<string> HostList = new List<string> (); 
+
+IGNORECASE
+
+CHARACTERS
+  digit   = "0123456789" .
+  letter  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" .
+  eol     = CHR(10) .
+
+TOKENS
+  number = digit { digit } .
+  name   = letter { letter | digit | "." | "-" } .
+
+COMMENTS FROM "#" TO eol
+
+IGNORE CHR(0) .. CHR(31)
+
+PRODUCTIONS
+  Check4
+  =
+  { Entry }
+  EOF                           (. if (Successful()) IO.WriteLine("all correct"); .)
+  .
+
+  Entry
+  = IPNumber { Name } .         
+                              
+  Name 
+  = name                        (. if (HostList.Contains(token.val)) SemError
+                                ("duplicate host names");
+                                else HostList.Add(token.val); .)
+  .
+
+  IPNumber
+  =                             (. int n, m; .)
+  Number<out n>
+  "." Number<out m>             (. n = 256 * n + m; .)
+  "." Number<out m>             (. n = 256 * n + m; .)
+  "." Number<out m>             (. n = 256 * n + m;
+                                   if (IPList.Contains(n)) SemError("duplicate IP number");
+                                   else IPList.Add(n); .)
+  .
+
+  Number<out int n>
+  =  number                     (. try {
+                                     n = Convert.ToInt32(token.val);
+                                   } catch (Exception) {
+                                     n = 256;
+                                   }
+                                   if (n > 255) SemError("number too large"); .)
+  .
+
+END Check4.
