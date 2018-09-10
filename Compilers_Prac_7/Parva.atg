@@ -335,14 +335,14 @@ PRODUCTIONS
 
   IfStatement<StackFrame frame>
                    			          (. Label falseLabel = new Label(!known);
-                                     Label trueLabel  = new Label(!known);
-                                     Label elsIfLabel = new Label(!known); .)
+                                     Label trueLabel  = new Label(!known); .)
   =  "if" "(" Condition ")"       (. CodeGen.BranchFalse(falseLabel); .)
       [ "then"                    (. SemError("'then' invalid."); .)  /* Perhaps just throw a warning here rather. */
       ]
         Statement<frame>          (. CodeGen.Branch(trueLabel); 
                                      falseLabel.Here(); .)
-    { "elsif" "(" Condition ")"   (. CodeGen.BranchFalse(elsIfLabel); .)
+    { "elsif" "(" Condition ")"   (. Label elsIfLabel = new Label(!known);
+                                     CodeGen.BranchFalse(elsIfLabel); .)
         Statement<frame>          (. CodeGen.Branch(trueLabel); 
                                      elsIfLabel.Here(); .)
     }
