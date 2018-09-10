@@ -1,0 +1,23 @@
+COMPILER Index  $CN
+/* Compilers Prac 4 task 1
+   Jeffrey Skeen, Luke des Tombe, Tom Makkink */
+
+CHARACTERS
+   Digit      = "0123456789" .
+   UpLetters  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" .
+   LowLetters = "abcdefghijklmnopqrstuvwxyz+" .
+   
+TOKENS
+   Words      = (UpLetters | LowLetters) {LowLetters | ["-"] Digit {Digit}} .
+   Numbers    = Digit {Digit} .
+   
+IGNORE CHR(0) .. CHR(31)
+
+PRODUCTIONS
+   Index      = { Line } EOF .
+   Line       =	Term {Term | "--" Term | "," Term | "(" Line ")" } .
+   Term       = Words | Pages .
+   Pages 	  = Numbers ["-" Numbers] .
+   
+
+END Index.
