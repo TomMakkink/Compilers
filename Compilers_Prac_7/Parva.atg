@@ -201,6 +201,14 @@ PRODUCTIONS
             | DoWhileStatement<frame>
             | ";"
           ) .
+    
+  InLoop<StackFrame frame, Label branch>
+  = {Statement<frame> | BreakStatement<branch>}  
+  
+
+  BreakStatement<Label branch>
+  = "break" WEAK ";"              (. CodeGen.Branch(branch); .) 
+  .
 
   Block<StackFrame frame>
   =                                  (. Table.OpenScope(); .)
@@ -357,7 +365,7 @@ PRODUCTIONS
 							    new Label(known); .)
   =  "while" "(" Condition ")"        (. CodeGen.BranchFalse
 								(loopExit); .)
-     Statement<frame>                 (. CodeGen.Branch
+     InLoop<frame, loopExit>                 (. CodeGen.Branch
 								(loopStart);
                                          loopExit.Here(); .)
   .
