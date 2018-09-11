@@ -179,18 +179,18 @@ PRODUCTIONS
   Body<StackFrame frame> (. Label DSPLabel = new Label(known);
                             int sizeMark = frame.size;
                             CodeGen.OpenStackFrame(0); .)
-  =  "{" { Statement<frame> } WEAK "}"       
+  =  "{" { Statement<frame,new Label(!known)> } WEAK "}"       
 			(. CodeGen.FixDSP(DSPLabel.Address(), 
 				frame.size - sizeMark);
                      CodeGen.LeaveVoidFunction(); .)
   .
 
-  Statement<StackFrame frame>
-  =  SYNC (   Block<frame>
+  Statement<StackFrame frame, Label branch>
+  =  SYNC (   Block<frame, branch>
             | ConstDeclarations
             | VarDeclarations<frame>
             | AssignmentOrCall
-            | IfStatement<frame>
+            | IfStatement<frame, branch>
             | WhileStatement<frame>
             | HaltStatement
             | ReturnStatement
@@ -198,21 +198,19 @@ PRODUCTIONS
             | WriteStatement
             | SwitchStatement<frame>
             | RepeatStatement<frame>
+            | BreakStatement<branch>
             | DoWhileStatement<frame>
             | ";"
           ) .
-    
-  InLoop<StackFrame frame, Label branch>
-  = {Statement<frame> | BreakStatement<branch>}  
-  
+     
 
   BreakStatement<Label branch>
-  = "break" WEAK ";"              (. CodeGen.Branch(branch); .) 
+  = "break" WEAK ";"              (. CodeGen.Branch(branch); .) /* The branch in codegen requires a label and uses that to then get the address to jump to.*/
   .
 
-  Block<StackFrame frame>
+  Block<StackFrame frame, Label branch>
   =                                  (. Table.OpenScope(); .)
-     "{" { Statement<frame> }
+     "{" { Statement<frame, branch>  }
      WEAK "}"                        (. Table.CloseScope(); .)
   .
 
@@ -341,43 +339,41 @@ PRODUCTIONS
      ]
   .
 
-  IfStatement<StackFrame frame>
+  IfStatement<StackFrame frame, Label loopExit>
                    			          (. Label falseLabel = new Label(!known);
                                      Label trueLabel  = new Label(!known); .)
   =  "if" "(" Condition ")"       (. CodeGen.BranchFalse(falseLabel); .)
       [ "then"                    (. SemError("'then' invalid."); .)  /* Perhaps just throw a warning here rather. */
       ]
-        Statement<frame>          (. CodeGen.Branch(trueLabel); 
+        Statement<frame,loopExit>          (. CodeGen.Branch(trueLabel); 
                                      falseLabel.Here(); .)
     { "elsif" "(" Condition ")"   (. Label elsIfLabel = new Label(!known);
                                      CodeGen.BranchFalse(elsIfLabel); .)
-        Statement<frame>          (. CodeGen.Branch(trueLabel); 
+        Statement<frame,loopExit>          (. CodeGen.Branch(trueLabel); 
                                      elsIfLabel.Here(); .)
     }
-    [ "else" Statement<frame>  ]   (. trueLabel.Here(); .) 
+    [ "else" Statement<frame, loopExit>  ]   (. trueLabel.Here(); .) 
                              
   .
 
 
-  WhileStatement<StackFrame frame>    (. Label loopExit  =
-								 new Label(!known);
-                                         Label loopStart =
-							    new Label(known); .)
-  =  "while" "(" Condition ")"        (. CodeGen.BranchFalse
-								(loopExit); .)
-     InLoop<frame, loopExit>                 (. CodeGen.Branch
-								(loopStart);
-                                         loopExit.Here(); .)
+  WhileStatement<StackFrame frame>    (. Label loopExit  = new Label(!known);
+                                         Label loopStart = new Label(known); .)
+
+  =  "while" "(" Condition ")"        (. CodeGen.BranchFalse(loopExit); .)
+
+     Statement<frame, loopExit>              (. CodeGen.Branch(loopStart);
+                                                loopExit.Here(); .)
   .
 
   RepeatStatement<StackFrame frame>    (. Label loopStart = new Label(known); 
                                          .)
- = "repeat" {Statement<frame>}         
+ = "repeat" {Statement<frame, new Label(!known)>}         
    "until" "(" Condition ")" WEAK ";"  (. CodeGen.BranchFalse(loopStart); .)
    . 
                                           
   DoWhileStatement<StackFrame frame>   (. Label loopStart = new Label(known); .) 
-  = "do" Statement<frame> 
+  = "do" Statement<frame,  new Label(!known) > 
    "while" "(" Condition ")" WEAK ";"  (. CodeGen.NegateBoolean(); 
                                           CodeGen.BranchFalse(loopStart); .) 
    .
@@ -388,11 +384,11 @@ PRODUCTIONS
     "(" Expression<out expType>
     ")" "{"
       { CaseLabelList
-        Statement<frame>
-        { Statement<frame>
+        Statement<frame, new Label(!known)>
+        { Statement<frame,  new Label(!known)>
         } }
       [ "default" ":"
-        { Statement<frame>
+        { Statement<frame,  new Label(!known)>
         } ]
     "}"
   .
