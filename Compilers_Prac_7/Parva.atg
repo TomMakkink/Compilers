@@ -204,10 +204,10 @@ PRODUCTIONS
           ) .
      
 
-  IncrDecreStatement< out bool def, out bool inc>                                              
-  = ("++"           (. inc = true; def = true; .)
-    | "--"          (. inc = false; def =true;.)
-              )            (. def = false; inc = false;.)
+  IncrDecreStatement<out bool inc>    (. inc = false; .)         /* Need to declare out value. */                                   
+  = "++"           (. inc = true;  .)
+    | "--"          (. inc = false; .)
+                        
   .
 
   BreakStatement<Label branch>
@@ -284,7 +284,7 @@ PRODUCTIONS
   .
 
 
-  AssignmentOrCall                     (. int expType; DesType des; bool inc,def; .)
+  AssignmentOrCall                     (. int expType; DesType des; bool inc; .)
   =  (  IF (IsCall(out des)) // resolver handles LL1 conflict
          identifier               (. CodeGen.FrameHeader(); .)
          "(" Arguments<des> ")"   (. CodeGen.Call
@@ -297,7 +297,13 @@ PRODUCTIONS
                                 SemError("incompatible types in assignment");
                                 CodeGen.Assign(des.type); .)
         )
-     | IncrDecreStatement<out def,out inc> WEAK ";" (.  if (def) CodeGen.IncOrDec(inc,des.type);.))
+     | IncrDecreStatement<out inc> WEAK ";" (. if (!IsArith(des.type)) SemError("Incompatiable type."); 
+                                               else CodeGen.IncOrDec(inc, des.type); .))
+     | IncrDecreStatement<out inc>                                      
+          Designator<out des>               (. if (des.entry.kind != Kinds.Var) SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]);
+                                               if (!IsArith(des.type)) SemError("Incompatiable type."); 
+                                               else CodeGen.IncOrDec(inc, des.type);  
+                                            .)
      )
   .
 
@@ -328,18 +334,10 @@ PRODUCTIONS
                                des = new DesType(entry);
                                if (entry.kind == Kinds.Var)
                                 CodeGen.LoadAddress(entry); .)
-     [  "["              	 (. if (IsArray(des.type))
-							 des.type--;
-                        		else 
-					  SemError("unexpected subscript");
-                               if (des.entry.kind !=
-								 Kinds.Var)
-                             SemError("unexpected subscript"); 
-                               CodeGen.Dereference(); .)
-        Expression<out indexType>  (. if (!IsArith(indexType))
-                           SemError("invalid subscript type");
-                                      CodeGen.Index(); .)
-
+     [  "["              	 (. if (IsArray(des.type)) des.type--; else SemError("unexpected subscript");
+                              if (des.entry.kind != Kinds.Var) SemError("unexpected subscript"); 
+                              CodeGen.Dereference(); .)
+        Expression<out indexType>  (. if (!IsArith(indexType)) SemError("invalid subscript type"); CodeGen.Index(); .)
            "]"
      ]
   .
