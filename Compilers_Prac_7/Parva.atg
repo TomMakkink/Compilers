@@ -204,6 +204,12 @@ PRODUCTIONS
           ) .
      
 
+  IncrDecreStatement< out bool def, out bool inc>                                              
+  = ("++"           (. inc = true; def = true; .)
+    | "--"          (. inc = false; def =true;.)
+              )            (. def = false; inc = false;.)
+  .
+
   BreakStatement<Label branch>
   = "break" WEAK ";"              (. CodeGen.Branch(branch); .) /* The branch in codegen requires a label and uses that to then get the address to jump to.*/
   .
@@ -278,22 +284,21 @@ PRODUCTIONS
   .
 
 
-  AssignmentOrCall                     (. int expType;
-                                          DesType des; .)
+  AssignmentOrCall                     (. int expType; DesType des; bool inc,def; .)
   =  (  IF (IsCall(out des)) // resolver handles LL1 conflict
          identifier               (. CodeGen.FrameHeader(); .)
          "(" Arguments<des> ")"   (. CodeGen.Call
 						    (des.entry.entryPoint); .)
-      |  Designator<out des>      (. if (des.entry.kind !=
-								 Kinds.Var)
-                         		SemError("cannot assign to " + 
-				    Kinds.kindNames[des.entry.kind]); .)
+      |  Designator<out des>      (. if (des.entry.kind !=Kinds.Var)
+                         		            SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]); .)
+        ((
          AssignOp
-         Expression<out expType>  (. if (!Assignable(des.type,
-							 expType))
+         Expression<out expType>  (. if (!Assignable(des.type,expType))
                                 SemError("incompatible types in assignment");
                                 CodeGen.Assign(des.type); .)
-     ) WEAK ";"
+        )
+     | IncrDecreStatement<out def,out inc> WEAK ";" (.  if (def) CodeGen.IncOrDec(inc,des.type);.))
+     )
   .
 
   Arguments<DesType des>        (. int argCount = 0;
@@ -317,7 +322,7 @@ PRODUCTIONS
 
   Designator<out DesType des>           (. string name;
                                            int indexType; .)
-  =  Ident<out name>        (. Entry entry = Table.Find(name);
+  = Ident<out name>        (. Entry entry = Table.Find(name);
                                if (!entry.declared)
                            SemError("undeclared identifier");
                                des = new DesType(entry);
