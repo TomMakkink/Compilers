@@ -205,8 +205,8 @@ PRODUCTIONS
      
 
   IncrDecreStatement<out bool inc>    (. inc = false; .)         /* Need to declare out value. */                                   
-  = "++"           (. inc = true;  .)
-    | "--"          (. inc = false; .)
+  = "++"                              (. inc = true;  .)
+    | "--"                            (. inc = false; .)
                         
   .
 
@@ -633,7 +633,15 @@ PRODUCTIONS
     | "Sqr" "("                    
     /* In current from, Sqrt() only allows a single parameter  */
     Expression<out type>           (. if (!IsArith(type)) SemError("Must be int"); .) 
-    ")"                            (. CodeGen.Sqr(); .) 
+    ")"                            (. CodeGen.Sqr();.)
+    | "Length" "("                           (. int ArrType; .)
+              Expression<out ArrType> ")"   (.   if(!IsArray(ArrType)) SemError("NOT ARRAY!");
+                                                  else{ ArrType = Types.intType;
+                                                        type = ArrType;
+                                                        CodeGen.Dereference();
+                                                                            
+                                                        }.) 
+
   .
 
   AddOp<out int op>                   (. op = CodeGen.nop; .)

@@ -107,7 +107,7 @@ namespace Parva {
     public static void Sqr(){
     // Generates code to calculate sqrt, and pushes it to the 
     // top of the stack 
-       Emit(PVM.sqr); 
+       Emit(PVM.sqrt); 
     } // CodeGen.Sqr
 
     public static void BinaryOp(int op) {
