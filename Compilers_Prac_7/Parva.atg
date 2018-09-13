@@ -405,8 +405,7 @@ PRODUCTIONS
 
   HaltStatement        
   =  "halt"   
-  ("(" WriteList ")"          
-  | )
+  ["(" WriteList ")" ]
                                             (. CodeGen.LeaveProgram(); .)
      WEAK ";"
   .
