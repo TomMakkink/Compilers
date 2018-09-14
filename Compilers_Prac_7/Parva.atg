@@ -634,12 +634,24 @@ PRODUCTIONS
     Expression<out type>           (. if (!IsArith(type)) SemError("Must be int"); .) 
     ")"                            (. CodeGen.Sqr();.)
     | "Length" "("                           (. int ArrType; .)
-              Expression<out ArrType> ")"   (.   if(!IsArray(ArrType)) SemError("NOT ARRAY!");
+              Expression<out ArrType> ")"   (.   if(!IsArray(ArrType)) SemError("Incompatable type. Please use an array.");
                                                   else{ ArrType = Types.intType;
                                                         type = ArrType;
-                                                        CodeGen.Dereference();
-                                                                            
+                                                        CodeGen.Dereference();                 
                                                         }.) 
+    | "Copy" "("                           
+          Designator<out des>      (. if (!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                            else CodeGen.Copy();
+                                            type = des.type; .)
+               ")" 
+    | "Equals" "("
+          Designator<out des>            (. if(!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                         .)
+          "," Designator<out des>         (. if(!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                             CodeGen.Equals();
+                                             type = Types.boolType;
+                                           .)
+    ")"
   .
 
   AddOp<out int op>                   (. op = CodeGen.nop; .)
