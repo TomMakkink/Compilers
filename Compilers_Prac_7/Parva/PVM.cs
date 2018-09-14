@@ -106,7 +106,7 @@ namespace Parva {
       sub     =  77,
       max     =  78,
       min     =  79, 
-      sqr     =  80,
+      sqrt     =  80,
 
       nul     = 255;                         // leave gap for future
 
@@ -546,7 +546,7 @@ namespace Parva {
             Push(minElements[0]); 
             }
             break; 
-          case PVM.sqr:           // Square root 
+          case PVM.sqrt:           // Square root 
             tos = Pop(); 
             Push(Convert.ToInt32(System.Math.Sqrt(tos)));
             break; 
@@ -880,6 +880,8 @@ namespace Parva {
       mnemonics[PVM.sub]      = "SUB";
       mnemonics[PVM.max]      = "MAX";
       mnemonics[PVM.min]      = "MIN";
+      mnemonics[PVM.sqrt]     = "SQRT";
+      
 
     } // PVM.Init
 
