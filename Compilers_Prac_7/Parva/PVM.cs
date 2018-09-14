@@ -644,10 +644,9 @@ namespace Parva {
             int addrLengthC1 = mem[mem[addrC1]];
             int addrLengthC2 = mem[mem[addrC2]];
             if (addrLengthC1 != addrLengthC2){
-              Push(0);
+              ps = badVal;
             }
             else {
-              
               int i = 1;
               while ((i < addrLengthC1 + 1) &&(i < addrLengthC2 +1 ) )
               {
@@ -655,7 +654,6 @@ namespace Parva {
                 i++;  
               }
             } 
-
             break;
           case eql:
             int addr1 = Pop();
@@ -671,8 +669,6 @@ namespace Parva {
               while (i < addrLength1 + 1)
               {
                 if (mem[mem[addr1]+i] != mem[mem[addr2] + i]) isEqual = false; 
-                 //Console.WriteLine(mem[mem[addr2] + i]);
-                // Console.WriteLine(mem[mem[addr2 + i]]);
                 i++;  
               }
               if (isEqual) Push(1);
