@@ -15,8 +15,8 @@ COMPILER Parva $NC
     debug    = false,
     optimize = false,
     listCode = false,
-    warnings = true;
-
+    warnings = true,
+    copy = false;
   const bool
     known = true;
 
@@ -295,7 +295,8 @@ PRODUCTIONS
          AssignOp
          Expression<out expType>  (. if (!Assignable(des.type,expType))
                                 SemError("incompatible types in assignment");
-                                CodeGen.Assign(des.type); .)
+                                if (!copy) CodeGen.Assign(des.type);
+                                copy = false; .)
         )
      | IncrDecreStatement<out inc> WEAK ";" (. if (!IsArith(des.type)) SemError("Incompatiable type."); 
                                                else CodeGen.IncOrDec(inc, des.type); .))
@@ -642,6 +643,7 @@ PRODUCTIONS
     | "Copy" "("                           
           Designator<out des>      (. if (!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
                                             else CodeGen.Copy();
+                                            copy = true;
                                             type = des.type; .)
                ")" 
     | "Equals" "("

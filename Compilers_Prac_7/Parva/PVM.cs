@@ -648,9 +648,9 @@ namespace Parva {
             }
             else {
               int i = 1;
-              while ((i < addrLengthC1 + 1) &&(i < addrLengthC2 +1 ) )
+              while ((i <= addrLengthC1) )
               {
-                mem[mem[addrC1]+i] = mem[mem[addrC2] + i];
+                mem[mem[addrC2]+i] = mem[mem[addrC1] + i];
                 i++;  
               }
             } 
@@ -661,7 +661,7 @@ namespace Parva {
             int addrLength1 = mem[mem[addr1]];
             int addrLength2 = mem[mem[addr2]];
             if (addrLength1 != addrLength2){
-              Push(0);
+              Push(0); // push flase if lenghts arnt ==
             }
             else {
               bool isEqual = true;   
