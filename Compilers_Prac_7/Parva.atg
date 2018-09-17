@@ -221,9 +221,9 @@ PRODUCTIONS
   .
 
   FinalDeclarations<StackFrame frame>       (. int value; 
-                                               bool isConst = true; 
+                                               bool isFinal = true; 
                                             .)
-  = "final" VarDeclarations<frame, isConst>
+  = "final" VarDeclarations<frame, isFinal>
   .
 
   ConstDeclarations
@@ -280,8 +280,8 @@ PRODUCTIONS
   OneVar<StackFrame frame, int type, bool isConst>    
                                     (. int expType;
                                    Entry var = new Entry(); .)
-  =  Ident<out var.name>           (. if (isConst) var.kind = Kinds.Fin;
-                                      else var.kind = Kinds.Var;
+  =  Ident<out var.name>           (. if (isConst) var.final = 1; 
+                                      var.kind = Kinds.Var;
                                       var.type = type;
                                       var.offset = frame.size;
                                       frame.size++; .)
@@ -300,19 +300,21 @@ PRODUCTIONS
          identifier               (. CodeGen.FrameHeader(); .)
          "(" Arguments<des> ")"   (. CodeGen.Call
 						    (des.entry.entryPoint); .)
-      |  Designator<out des>      (. if (des.entry.kind !=Kinds.Var)
+      |  Designator<out des>      (. if (des.entry.kind != Kinds.Var || des.entry.final == 1)
                          		            SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]); .)
         ((
          AssignOp
          Expression<out expType>  (. if (!Assignable(des.type,expType))
                                 SemError("incompatible types in assignment");
                                 if (!copy) CodeGen.Assign(des.type);
-                                copy = false; .)
+                                copy = false; 
+                                if (des.entry.final == 2) des.entry.final = 1; 
+                                .)
         )
-     | IncrDecreStatement<out inc> WEAK ";" (. if (!IsArith(des.type)) SemError("Incompatiable type."); 
+     | IncrDecreStatement<out inc> WEAK ";" (. if (!IsArith(des.type) || des.entry.final == 1) SemError("Incompatiable type."); 
                                                else CodeGen.IncOrDec(inc, des.type); .))
      | IncrDecreStatement<out inc>                                      
-          Designator<out des>               (. if (des.entry.kind != Kinds.Var) SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]);
+          Designator<out des>               (. if (des.entry.kind != Kinds.Var || des.entry.final == 1) SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]);
                                                if (!IsArith(des.type)) SemError("Incompatiable type."); 
                                                else CodeGen.IncOrDec(inc, des.type);  
                                             .)
@@ -338,18 +340,23 @@ PRODUCTIONS
      )
   .
 
-  Designator<out DesType des>           (. string name;
-                                           int indexType; .)
+  Designator<out DesType des>           (. string name; 
+                                           int indexType; 
+                                            
+                                        .)
   = Ident<out name>        (. Entry entry = Table.Find(name);
                                if (!entry.declared)
                            SemError("undeclared identifier");
                                des = new DesType(entry);
-                               if (entry.kind == Kinds.Var || entry.kind == Kinds.Fin)
-                                CodeGen.LoadAddress(entry); .)
+                               if (entry.kind == Kinds.Var)
+                                CodeGen.LoadAddress(entry); 
+                              if (des.entry.final == 2) des.entry.final = 1;  
+                                .)
      [  "["              	 (. if (IsArray(des.type)) des.type--; else SemError("unexpected subscript");
                               if (des.entry.kind != Kinds.Var) SemError("unexpected subscript"); 
                               CodeGen.Dereference(); .)
-        Expression<out indexType>  (. if (!IsArith(indexType)) SemError("invalid subscript type"); CodeGen.Index(); .)
+        Expression<out indexType>  (. if (!IsArith(indexType)) SemError("invalid subscript type"); CodeGen.Index(); 
+                                      des.entry.final = 2; .)
            "]"
      ]
   .
@@ -405,8 +412,8 @@ PRODUCTIONS
         CaseLabelList                     (. Label repeatSwitch = new Label(!known);  
                                              CodeGen.Comparison(CodeGen.ceq, expType); 
                                              CodeGen.BranchFalse(repeatSwitch);.)
-        Statement<frame, new Label(!known)> 
-        { Statement<frame,  new Label(!known)>
+        Statement<frame, exitSwitch> 
+        { Statement<frame,  exitSwitch>
         } 
                                           (. CodeGen.Branch(exitSwitch);
                                              repeatSwitch.Here(); 
@@ -414,7 +421,7 @@ PRODUCTIONS
                                           .)  
         }
       [ "default" ":"
-        { Statement<frame,  new Label(!known)>
+        { Statement<frame,  exitSwitch>
         } ]
                                           (. exitSwitch.Here(); 
                                              CodeGen.RemoveDuplicate(); .) 
@@ -458,7 +465,7 @@ PRODUCTIONS
                                         DesType des; .)
   =   StringConst<out str>     (. CodeGen.WriteString(str); .)
     | Designator<out des>            (. if (des.entry.kind !=
-								 Kinds.Var)
+								 Kinds.Var || des.entry.final == 1)
                          SemError("wrong kind of identifier");
                                   switch (des.type) {
                                     case Types.intType:
@@ -612,7 +619,6 @@ PRODUCTIONS
   =    Designator<out des>      (. type = des.type;
                                    switch (des.entry.kind) {
                                     case Kinds.Var:
-                                    case Kinds.Fin:
                                         CodeGen.Dereference();
                                         break;
                                     case Kinds.Con:

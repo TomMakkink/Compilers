@@ -50,10 +50,9 @@ namespace Parva {
     public const int
       Con   = 0,
       Var   = 1,
-      Fun   = 2,
-      Fin   = 3;
+      Fun   = 2;
 
-    public static string[] kindNames = { "const", "var  ", "func ", "final "};
+    public static string[] kindNames = { "const", "var  ", "func "};
 
   } // end Kinds
 
@@ -65,6 +64,7 @@ namespace Parva {
     public int     value       = 0;       // constants
     public int     offset      = 0;       // variables
     public bool    declared    = true;    // true for all except sentinel entry
+    public int     final       = 0; 
     public Entry   nextInScope = null;    // link to next entry in current scope
     public int     nParams     = 0;       // functions
     public Label   entryPoint  = new Label(false);
