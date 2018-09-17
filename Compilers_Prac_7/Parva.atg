@@ -394,27 +394,42 @@ PRODUCTIONS
    .
 
 
-  SwitchStatement<StackFrame frame>       (. int expType; .)
+  SwitchStatement<StackFrame frame>       (. int expType; 
+                                             Label exitSwitch = new Label(!known); 
+                                          .)
   = "switch"
-    "(" Expression<out expType>
+    "(" Expression<out expType>           (. if (!IsArith(expType)) SemError(
+                                             "Invalid condition type.");  .)
     ")" "{"
-      { CaseLabelList
-        Statement<frame, new Label(!known)>
+      {                                   (. CodeGen.Duplicate();.)
+        CaseLabelList                     (. Label repeatSwitch = new Label(!known);  
+                                             CodeGen.Comparison(CodeGen.ceq, expType); 
+                                             CodeGen.BranchFalse(repeatSwitch);.)
+        Statement<frame, new Label(!known)> 
         { Statement<frame,  new Label(!known)>
-        } }
+        } 
+                                          (. CodeGen.Branch(exitSwitch);
+                                             repeatSwitch.Here(); 
+                                             CodeGen.Duplicate();
+                                          .)  
+        }
       [ "default" ":"
         { Statement<frame,  new Label(!known)>
         } ]
-    "}"
+                                          (. exitSwitch.Here(); 
+                                             CodeGen.RemoveDuplicate(); .) 
+    "}"                                 
   .
 
   CaseLabelList
   = CaseLabel { CaseLabel }
   .
 
-  CaseLabel                              	(. ConstRec con; .)
-  = "case" [ "+" | "-" ]
-    Constant<out con>
+  CaseLabel                              	(. ConstRec con; bool isNeg = false; .)
+  = "case" [ "+" | "-"                      (. isNeg = true; .)
+  ]
+    Constant<out con>                       (. if (isNeg) con.value = con.value * -1;  
+                                            CodeGen.LoadConstant(con.value); .)
     ":"
   .
 

@@ -112,6 +112,7 @@ namespace Parva {
       cpy     =  82,
       fprint  =  83,
       fprns   =  84,
+      rdup    =  85,
 
       nul     = 255;                         // leave gap for future
 
@@ -339,6 +340,9 @@ namespace Parva {
             tos = Pop();
             Push(tos); Push(tos);
             break;
+          case PVM.rdup:          // Remove top of stack 
+            tos = Pop();  
+            break; 
           case PVM.lda:           // push local address
             adr = cpu.fp - 1 - Next();
             if (InBounds(adr)) Push(adr);
@@ -881,6 +885,7 @@ namespace Parva {
       mnemonics[PVM.div]      = "DIV";
       mnemonics[PVM.dsp]      = "DSP";
       mnemonics[PVM.dup]      = "DUP";
+      mnemonics[PVM.rdup]     = "RDUP";  
       mnemonics[PVM.fhdr]     = "FHDR";
       mnemonics[PVM.halt]     = "HALT";
       mnemonics[PVM.heap]     = "HEAP";

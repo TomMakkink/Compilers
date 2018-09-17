@@ -209,6 +209,16 @@ namespace Parva {
       Emit(PVM.fprns); Emit(first);
     }
 
+    public static void Duplicate(){
+    // Duplicate top of stack 
+      Emit(PVM.dup); 
+    } // CodeGen.Duplicate()
+
+    public static void RemoveDuplicate() {
+    // Pops duplicate off the stack 
+       Emit(PVM.rdup); 
+    } // CodeGen.RemoveDuplicate()
+
     public static void LoadConstant(int number) {
     // Generates code to push number onto evaluation stack
       if (Parser.optimize)
