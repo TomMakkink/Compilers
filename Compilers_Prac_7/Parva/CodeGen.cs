@@ -107,7 +107,7 @@ namespace Parva {
     public static void Sqr(){
     // Generates code to calculate sqrt, and pushes it to the 
     // top of the stack 
-       Emit(PVM.sqr); 
+       Emit(PVM.sqrt); 
     } // CodeGen.Sqr
 
     public static void BinaryOp(int op) {
@@ -404,6 +404,16 @@ namespace Parva {
     // Inline assembly of two word branch style instruction with Label operand
       Emit(PVM.OpCode(mnemonic)); Emit(adr.Address());
     } // CodeGen.Branch
+  
+    public static void Copy() {
+      // This will copy one array to another array.
+      Emit(PVM.cpy);
+    }
+
+    public static void Equals(){
+      // Compares lengths. Pushes 1 if equal, 0 if not
+      Emit(PVM.eql);
+    } // CodeGen.Equals
 
   } // end CodeGen
 

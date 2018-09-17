@@ -107,9 +107,11 @@ namespace Parva {
       sub     =  77,
       max     =  78,
       min     =  79, 
-      sqr     =  80,
-      fprint  =  81,
-      fprns   =  82,
+      sqrt    =  80,
+      eql     =  81,
+      cpy     =  82,
+      fprint  =  83,
+      fprns   =  84,
 
       nul     = 255;                         // leave gap for future
 
@@ -567,7 +569,7 @@ namespace Parva {
             Push(minElements[0]); 
             }
             break; 
-          case PVM.sqr:           // Square root 
+          case PVM.sqrt:           // Square root 
             tos = Pop(); 
             Push(Convert.ToInt32(System.Math.Sqrt(tos)));
             break; 
@@ -656,6 +658,44 @@ namespace Parva {
               if (mem[adr] > 0) mem[adr]--;
               else ps = badVal;
             break;
+          case cpy:
+
+            int addrC1 = Pop();
+            int addrC2 = Pop();
+            int addrLengthC1 = mem[mem[addrC1]];
+            int addrLengthC2 = mem[mem[addrC2]];
+            if (addrLengthC1 != addrLengthC2){
+              ps = badVal;
+            }
+            else {
+              int i = 1;
+              while ((i <= addrLengthC1) )
+              {
+                mem[mem[addrC2]+i] = mem[mem[addrC1] + i];
+                i++;  
+              }
+            } 
+            break;
+          case eql:
+            int addr1 = Pop();
+            int addr2 = Pop();
+            int addrLength1 = mem[mem[addr1]];
+            int addrLength2 = mem[mem[addr2]];
+            if (addrLength1 != addrLength2){
+              Push(0); // push flase if lenghts arnt ==
+            }
+            else {
+              bool isEqual = true;   
+              int i = 1;
+              while (i < addrLength1 + 1)
+              {
+                if (mem[mem[addr1]+i] != mem[mem[addr2] + i]) isEqual = false; 
+                i++;  
+              }
+              if (isEqual) Push(1);
+              else Push(0);
+            } 
+          break;
           case PVM.stack:         // stack dump (debugging)
             StackDump(results, pcNow);
             break;
@@ -901,6 +941,10 @@ namespace Parva {
       mnemonics[PVM.sub]      = "SUB";
       mnemonics[PVM.max]      = "MAX";
       mnemonics[PVM.min]      = "MIN";
+      mnemonics[PVM.sqrt]     = "SQRT";
+      mnemonics[PVM.eql]     = "EQL";
+      mnemonics[PVM.cpy]     = "CPY";
+      
 
     } // PVM.Init
 

@@ -15,8 +15,8 @@ COMPILER Parva $NC
     debug    = false,
     optimize = false,
     listCode = false,
-    warnings = true;
-
+    warnings = true,
+    copy = false;
   const bool
     known = true;
 
@@ -179,19 +179,19 @@ PRODUCTIONS
   Body<StackFrame frame> (. Label DSPLabel = new Label(known);
                             int sizeMark = frame.size;
                             CodeGen.OpenStackFrame(0); .)
-  =  "{" { Statement<frame> } WEAK "}"       
+  =  "{" { Statement<frame,new Label(!known)> } WEAK "}"       
 			(. CodeGen.FixDSP(DSPLabel.Address(), 
 				frame.size - sizeMark);
                      CodeGen.LeaveVoidFunction(); .)
   .
 
-  Statement<StackFrame frame>         (. bool isConst = false; .)
-  =  SYNC (   Block<frame>
+  Statement<StackFrame frame, Label branch>        (. bool isConst = false; .) 
+  =  SYNC (   Block<frame, branch>
             | ConstDeclarations
             | FinalDeclarations<frame>
             | VarDeclarations<frame, isConst>
             | AssignmentOrCall
-            | IfStatement<frame>
+            | IfStatement<frame, branch>
             | WhileStatement<frame>
             | HaltStatement
             | ReturnStatement
@@ -199,13 +199,24 @@ PRODUCTIONS
             | WriteStatement
             | SwitchStatement<frame>
             | RepeatStatement<frame>
+            | BreakStatement<branch>
             | DoWhileStatement<frame>
             | ";"
           ) .
     
-  Block<StackFrame frame>
+  IncrDecreStatement<out bool inc>    (. inc = false; .)         /* Need to declare out value. */                                   
+  = "++"                              (. inc = true;  .)
+    | "--"                            (. inc = false; .)
+                        
+  .
+
+  BreakStatement<Label branch>
+  = "break" WEAK ";"              (. CodeGen.Branch(branch); .) /* The branch in codegen requires a label and uses that to then get the address to jump to.*/
+  .
+
+  Block<StackFrame frame, Label branch>
   =                                  (. Table.OpenScope(); .)
-     "{" { Statement<frame> }
+     "{" { Statement<frame, branch>  }
      WEAK "}"                        (. Table.CloseScope(); .)
   .
 
@@ -284,22 +295,28 @@ PRODUCTIONS
   .
 
 
-  AssignmentOrCall                     (. int expType;
-                                          DesType des; .)
+  AssignmentOrCall                     (. int expType; DesType des; bool inc; .)
   =  (  IF (IsCall(out des)) // resolver handles LL1 conflict
          identifier               (. CodeGen.FrameHeader(); .)
          "(" Arguments<des> ")"   (. CodeGen.Call
 						    (des.entry.entryPoint); .)
-      |  Designator<out des>      (. if (des.entry.kind !=
-								 Kinds.Var)
-                         		SemError("cannot assign to " + 
-				    Kinds.kindNames[des.entry.kind]); .)
+      |  Designator<out des>      (. if (des.entry.kind !=Kinds.Var)
+                         		            SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]); .)
+        ((
          AssignOp
-         Expression<out expType>  (. if (!Assignable(des.type,
-							 expType))
+         Expression<out expType>  (. if (!Assignable(des.type,expType))
                                 SemError("incompatible types in assignment");
-                                CodeGen.Assign(des.type); .)
-     ) WEAK ";"
+                                if (!copy) CodeGen.Assign(des.type);
+                                copy = false; .)
+        )
+     | IncrDecreStatement<out inc> WEAK ";" (. if (!IsArith(des.type)) SemError("Incompatiable type."); 
+                                               else CodeGen.IncOrDec(inc, des.type); .))
+     | IncrDecreStatement<out inc>                                      
+          Designator<out des>               (. if (des.entry.kind != Kinds.Var) SemError("cannot assign to " + Kinds.kindNames[des.entry.kind]);
+                                               if (!IsArith(des.type)) SemError("Incompatiable type."); 
+                                               else CodeGen.IncOrDec(inc, des.type);  
+                                            .)
+     )
   .
 
   Arguments<DesType des>        (. int argCount = 0;
@@ -323,65 +340,55 @@ PRODUCTIONS
 
   Designator<out DesType des>           (. string name;
                                            int indexType; .)
-  =  Ident<out name>        (. Entry entry = Table.Find(name);
+  = Ident<out name>        (. Entry entry = Table.Find(name);
                                if (!entry.declared)
                            SemError("undeclared identifier");
                                des = new DesType(entry);
                                if (entry.kind == Kinds.Var || entry.kind == Kinds.Fin)
                                 CodeGen.LoadAddress(entry); .)
-     [  "["              	 (. if (IsArray(des.type))
-							 des.type--;
-                        		else 
-					  SemError("unexpected subscript");
-                               if (des.entry.kind !=
-								 Kinds.Var)
-                             SemError("unexpected subscript"); 
-                               CodeGen.Dereference(); .)
-        Expression<out indexType>  (. if (!IsArith(indexType))
-                           SemError("invalid subscript type");
-                                      CodeGen.Index(); .)
-
+     [  "["              	 (. if (IsArray(des.type)) des.type--; else SemError("unexpected subscript");
+                              if (des.entry.kind != Kinds.Var) SemError("unexpected subscript"); 
+                              CodeGen.Dereference(); .)
+        Expression<out indexType>  (. if (!IsArith(indexType)) SemError("invalid subscript type"); CodeGen.Index(); .)
            "]"
      ]
   .
 
-  IfStatement<StackFrame frame>
+  IfStatement<StackFrame frame, Label loopExit>
                    			          (. Label falseLabel = new Label(!known);
                                      Label trueLabel  = new Label(!known); .)
   =  "if" "(" Condition ")"       (. CodeGen.BranchFalse(falseLabel); .)
       [ "then"                    (. SemError("'then' invalid."); .)  /* Perhaps just throw a warning here rather. */
       ]
-        Statement<frame>          (. CodeGen.Branch(trueLabel); 
+        Statement<frame,loopExit>          (. CodeGen.Branch(trueLabel); 
                                      falseLabel.Here(); .)
     { "elsif" "(" Condition ")"   (. Label elsIfLabel = new Label(!known);
                                      CodeGen.BranchFalse(elsIfLabel); .)
-        Statement<frame>          (. CodeGen.Branch(trueLabel); 
+        Statement<frame,loopExit>          (. CodeGen.Branch(trueLabel); 
                                      elsIfLabel.Here(); .)
     }
-    [ "else" Statement<frame>  ]   (. trueLabel.Here(); .) 
+    [ "else" Statement<frame, loopExit>  ]   (. trueLabel.Here(); .) 
                              
   .
 
 
-  WhileStatement<StackFrame frame>    (. Label loopExit  =
-								 new Label(!known);
-                                         Label loopStart =
-							    new Label(known); .)
-  =  "while" "(" Condition ")"        (. CodeGen.BranchFalse
-								(loopExit); .)
-     Statement<frame>          (. CodeGen.Branch
-								(loopStart);
-                                         loopExit.Here(); .)
+  WhileStatement<StackFrame frame>    (. Label loopExit  = new Label(!known);
+                                         Label loopStart = new Label(known); .)
+
+  =  "while" "(" Condition ")"        (. CodeGen.BranchFalse(loopExit); .)
+
+     Statement<frame, loopExit>              (. CodeGen.Branch(loopStart);
+                                                loopExit.Here(); .)
   .
 
   RepeatStatement<StackFrame frame>    (. Label loopStart = new Label(known); 
                                          .)
- = "repeat" {Statement<frame>}         
+ = "repeat" {Statement<frame, new Label(!known)>}         
    "until" "(" Condition ")" WEAK ";"  (. CodeGen.BranchFalse(loopStart); .)
    . 
                                           
   DoWhileStatement<StackFrame frame>   (. Label loopStart = new Label(known); .) 
-  = "do" Statement<frame> 
+  = "do" Statement<frame,  new Label(!known) > 
    "while" "(" Condition ")" WEAK ";"  (. CodeGen.NegateBoolean(); 
                                           CodeGen.BranchFalse(loopStart); .) 
    .
@@ -392,11 +399,11 @@ PRODUCTIONS
     "(" Expression<out expType>
     ")" "{"
       { CaseLabelList
-        Statement<frame>
-        { Statement<frame>
+        Statement<frame, new Label(!known)>
+        { Statement<frame,  new Label(!known)>
         } }
       [ "default" ":"
-        { Statement<frame>
+        { Statement<frame,  new Label(!known)>
         } ]
     "}"
   .
@@ -413,8 +420,7 @@ PRODUCTIONS
 
   HaltStatement        
   =  "halt"   
-  ("(" WriteList ")"          
-  | )
+  ["(" WriteList ")" ]
                                             (. CodeGen.LeaveProgram(); .)
      WEAK ";"
   .
@@ -644,9 +650,28 @@ PRODUCTIONS
                                       CodeGen.Min(); .)
     ")"
     | "Sqr" "("                    
-    /* In current from, Sqrt() only allows a single parameter  */
     Expression<out type>           (. if (!IsArith(type)) SemError("Must be int"); .) 
-    ")"                            (. CodeGen.Sqr(); .) 
+    ")"                            (. CodeGen.Sqr();.)
+    | "Length" "("                           (. int ArrType; .)
+              Expression<out ArrType> ")"   (.   if(!IsArray(ArrType)) SemError("Incompatable type. Please use an array.");
+                                                  else{ ArrType = Types.intType;
+                                                        type = ArrType;
+                                                        CodeGen.Dereference();                 
+                                                        }.) 
+    | "Copy" "("                           
+          Designator<out des>      (. if (!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                            else CodeGen.Copy();
+                                            copy = true;
+                                            type = des.type; .)
+               ")" 
+    | "Equals" "("
+          Designator<out des>            (. if(!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                         .)
+          "," Designator<out des>         (. if(!IsArray(des.type)) SemError("Incompatable type. Please use an array.");
+                                             CodeGen.Equals();
+                                             type = Types.boolType;
+                                           .)
+    ")"
   .
 
   AddOp<out int op>                   (. op = CodeGen.nop; .)
