@@ -185,10 +185,11 @@ PRODUCTIONS
                      CodeGen.LeaveVoidFunction(); .)
   .
 
-  Statement<StackFrame frame>
+  Statement<StackFrame frame>         (. bool isConst = false; .)
   =  SYNC (   Block<frame>
             | ConstDeclarations
-            | VarDeclarations<frame>
+            | FinalDeclarations<frame>
+            | VarDeclarations<frame, isConst>
             | AssignmentOrCall
             | IfStatement<frame>
             | WhileStatement<frame>
@@ -202,18 +203,16 @@ PRODUCTIONS
             | ";"
           ) .
     
-  InLoop<StackFrame frame, Label branch>
-  = {Statement<frame> | BreakStatement<branch>}  
-  
-
-  BreakStatement<Label branch>
-  = "break" WEAK ";"              (. CodeGen.Branch(branch); .) 
-  .
-
   Block<StackFrame frame>
   =                                  (. Table.OpenScope(); .)
      "{" { Statement<frame> }
      WEAK "}"                        (. Table.CloseScope(); .)
+  .
+
+  FinalDeclarations<StackFrame frame>       (. int value; 
+                                               bool isConst = true; 
+                                            .)
+  = "final" VarDeclarations<frame, isConst>
   .
 
   ConstDeclarations
@@ -241,9 +240,11 @@ PRODUCTIONS
 						    con.value = 0; .)
   .
 
-  VarDeclarations<StackFrame frame>          (. int type; .)
+  
+
+  VarDeclarations<StackFrame frame, bool isConst>          (. int type; .)
   =  Type<out type>
-     VarList<frame, type>
+     VarList<frame, type, isConst>
      WEAK ";"
   .
 
@@ -260,14 +261,16 @@ PRODUCTIONS
   .
 
 
-  VarList<StackFrame frame, int type>
-  =  OneVar<frame, type>
-     { WEAK "," OneVar<frame, type> }
+  VarList<StackFrame frame, int type, bool isConst>
+  =  OneVar<frame, type, isConst>
+     { WEAK "," OneVar<frame, type, isConst> }
   .
 
-  OneVar<StackFrame frame, int type>    (. int expType;
+  OneVar<StackFrame frame, int type, bool isConst>    
+                                    (. int expType;
                                    Entry var = new Entry(); .)
-  =  Ident<out var.name>           (. var.kind = Kinds.Var;
+  =  Ident<out var.name>           (. if (isConst) var.kind = Kinds.Fin;
+                                      else var.kind = Kinds.Var;
                                       var.type = type;
                                       var.offset = frame.size;
                                       frame.size++; .)
@@ -275,7 +278,8 @@ PRODUCTIONS
        Expression<out expType>   (. if (!Assignable(var.type,
 							 expType))
                  SemError("incompatible types in assignment");
-                                  CodeGen.Assign(var.type); .)
+                                  CodeGen.Assign(var.type); 
+                                  .)
      ]                                (. Table.Insert(var); .)
   .
 
@@ -323,7 +327,7 @@ PRODUCTIONS
                                if (!entry.declared)
                            SemError("undeclared identifier");
                                des = new DesType(entry);
-                               if (entry.kind == Kinds.Var)
+                               if (entry.kind == Kinds.Var || entry.kind == Kinds.Fin)
                                 CodeGen.LoadAddress(entry); .)
      [  "["              	 (. if (IsArray(des.type))
 							 des.type--;
@@ -365,7 +369,7 @@ PRODUCTIONS
 							    new Label(known); .)
   =  "while" "(" Condition ")"        (. CodeGen.BranchFalse
 								(loopExit); .)
-     InLoop<frame, loopExit>                 (. CodeGen.Branch
+     Statement<frame>          (. CodeGen.Branch
 								(loopStart);
                                          loopExit.Here(); .)
   .
@@ -452,23 +456,29 @@ PRODUCTIONS
   | "writeLine" "(" [WriteList] ")" WEAK ";"  (. CodeGen.WriteString("\n");.)
   .
 
-  WriteList
-  = WriteElement { WEAK "," WriteElement }
+  WriteList                            
+  = WriteElement{ WEAK "," WriteElement }
   .
 
-  WriteElement                  (. int expType; string str;.)
-  =   StringConst<out str>      (. CodeGen.WriteString(str);.)
-    | Expression<out expType>   (. if (!(IsArith(expType) ||
-						 expType == Types.boolType))
-                           SemError("cannot write this type");
-                                 switch (expType) {
-                                   case Types.intType:
-                                   case Types.boolType:
-                                   case Types.charType:
-                                     CodeGen.Write(expType);
-							break;
-                                   default:  break;
+  WriteElement (. int expType; string str;.)
+  =   StringConst<out str>     
+    ( ":" Expression<out expType>              (. if (!IsArith(expType)) SemError("Write must be formatted with a numeric type"); 
+                                                  CodeGen.WriteFormatString(str); .)
+    |                                          (. CodeGen.WriteString(str); .)
+    )
+    | Expression<out expType>                  (. if (!(IsArith(expType) || expType == Types.boolType))
+                                                        SemError("cannot write this type");.)
+    ( ":" Expression<out expType>               (. if (!IsArith(expType)) SemError("Write must be formatted with a numeric type"); 
+                                                   CodeGen.WriteFormat(); .)
+    |                                           (. switch (expType) {
+                                                    case Types.intType:
+                                                    case Types.boolType:
+                                                    case Types.charType:
+                                                        CodeGen.Write(expType);
+							                        break;
+                                                    default:  break;
                                                     } .)
+    )
   .
 
   Condition                       (. int type; .)
@@ -581,6 +591,7 @@ PRODUCTIONS
   =    Designator<out des>      (. type = des.type;
                                    switch (des.entry.kind) {
                                     case Kinds.Var:
+                                    case Kinds.Fin:
                                         CodeGen.Dereference();
                                         break;
                                     case Kinds.Con:

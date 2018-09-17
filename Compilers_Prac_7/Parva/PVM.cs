@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 
 namespace Parva {
 
@@ -107,6 +108,8 @@ namespace Parva {
       max     =  78,
       min     =  79, 
       sqr     =  80,
+      fprint  =  81,
+      fprns   =  82,
 
       nul     = 255;                         // leave gap for future
 
@@ -207,6 +210,7 @@ namespace Parva {
         case PVM.stl:
         case PVM.stlc:
         case PVM.prns:
+        case PVM.fprns:
           results.Write(mem[cpu.pc], 7); break;
         default: break;
       }
@@ -496,9 +500,26 @@ namespace Parva {
             }
             if (tracing) results.WriteLine();
             break;
+          case PVM.fprns:          // string output
+            if (tracing) results.Write(padding);
+            loop = Next();
+            StringBuilder str = new StringBuilder (); 
+            while (ps == running && mem[loop] != 0) {
+              //results.Write((char) mem[loop]); loop--;
+              str.Append((char) mem[loop]); loop--; 
+              if (loop < stackBase) ps = badMem;
+            }
+            results.Write(str.ToString(), Pop());  
+            if (tracing) results.WriteLine();
+            break;
           case PVM.prnl:          // newline
             results.WriteLine();
             break;
+          case PVM.fprint:
+            tos = Pop(); 
+            sos = Pop(); 
+            results.Write(sos, tos); 
+            break; 
           case PVM.neg:           // integer negation
             Push(-Pop());
             break;

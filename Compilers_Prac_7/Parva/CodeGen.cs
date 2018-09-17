@@ -171,6 +171,11 @@ namespace Parva {
       }
     } // CodeGen.Write
 
+    public static void WriteFormat(){
+    // Generates code to ouput a formatted string, of a specified width
+      Emit(PVM.fprint); 
+    }
+
     public static void WriteLine() {
     // Generates code to output line mark
       Emit(PVM.prnl);
@@ -189,6 +194,20 @@ namespace Parva {
       stkTop--; PVM.mem[stkTop] = 0;
       Emit(PVM.prns); Emit(first);
     } // CodeGen.WriteString
+
+    public static void WriteFormatString(string str){
+    // Writes a formatted string literal. 
+      int l = str.Length, first = stkTop - 1;
+      if (stkTop <= codeTop + l + 1) {
+        Parser.SemError("program too long"); generatingCode = false;
+        return;
+      }
+      for (int i = 0; i < l; i++) {
+        stkTop--; PVM.mem[stkTop] = str[i];
+      }
+      stkTop--; PVM.mem[stkTop] = 0;
+      Emit(PVM.fprns); Emit(first);
+    }
 
     public static void LoadConstant(int number) {
     // Generates code to push number onto evaluation stack
