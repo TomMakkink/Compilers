@@ -46,6 +46,10 @@ namespace Parva {
       return memAdr.ToString();
     } // Label.ToString
 
+    public static void IncrMemAdr(int incr) {
+      memAdr += incr;     
+    }
+
   } // end Label
 
   class CodeGen {
@@ -181,9 +185,9 @@ namespace Parva {
       Emit(PVM.prnl);
     } // CodeGen.WriteLine
 
-    public static void WriteString(string str) {
+    public static void WriteString(string str, Label location) {
     // Generates code to output a string str stored at known location
-      int l = str.Length, first = stkTop - 1;
+      int l = str.Length;
       if (stkTop <= codeTop + l + 1) {
         Parser.SemError("program too long"); generatingCode = false;
         return;
@@ -192,9 +196,9 @@ namespace Parva {
         stkTop--; PVM.mem[stkTop] = str[i];
       }
       stkTop--; PVM.mem[stkTop] = 0;
-      Emit(PVM.prns); Emit(first);
-    } // CodeGen.WriteString
-
+      Emit(PVM.prns); Emit(location.Address());
+      location.IncrMemAdr(l + 1); 
+    } // CodeGen.WriteString:w
     public static void WriteFormatString(string str){
     // Writes a formatted string literal. 
       int l = str.Length, first = stkTop - 1;
