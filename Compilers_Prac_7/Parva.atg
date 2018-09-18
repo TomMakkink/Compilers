@@ -17,7 +17,7 @@ COMPILER Parva $NC
     listCode = false,
     warnings = true,
     copy = false;
-  const bool
+    const bool
     known = true;
 
   // This next method might better be located in the code
@@ -59,7 +59,7 @@ COMPILER Parva $NC
   // the following is global for expediency (fewer parameters needed)
 
   static Label mainEntryPoint = new Label(!known);
-  static Label mainExitPoint = new Label(!known); 
+  static int stringOffSet = 0; 
 
   static bool IsArith(int type) {
     return type == Types.intType || type == Types.charType || type == Types.noType;
@@ -137,10 +137,9 @@ PRODUCTIONS
                                 CodeGen.Call(mainEntryPoint);
 						// forward, incomplete
                                 CodeGen.LeaveProgram(); .)     						// return to O/S
-  = {   FuncDeclaration }   (. mainExitPoint.Here(); .)
-    EOF                 (. if 
-						(!mainEntryPoint.IsDefined())
-                         SemError("missing Main function"); .)
+  = {   FuncDeclaration } 
+    EOF                 (. if (!mainEntryPoint.IsDefined())
+                              SemError("missing Main function"); .)
   .
 
   FuncDeclaration
@@ -494,11 +493,13 @@ PRODUCTIONS
   =   StringConst<out str>     
     ( ":" Expression<out expType>              (. if (!IsArith(expType)) SemError("Write must be formatted with a numeric type"); 
                                                   CodeGen.WriteFormatString(str); .)
-    |                                          (. CodeGen.WriteString(str, mainExitPoint); 
-                                                .)
+    |                                          (. CodeGen.WriteString(str, stringOffSet); 
+                                                  stringOffSet += str.Length + 2;
+                                               .)
     )
     | Expression<out expType>                  (. if (!(IsArith(expType) || expType == Types.boolType))
-                                                        SemError("cannot write this type");.)
+                                                        SemError("cannot write this type");
+                                                        .)
     ( ":" Expression<out expType>               (. if (!IsArith(expType)) SemError("Write must be formatted with a numeric type"); 
                                                    CodeGen.WriteFormat(); .)
     |                                           (. switch (expType) {

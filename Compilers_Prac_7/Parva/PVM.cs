@@ -21,10 +21,12 @@ namespace Parva {
     public int mp;            // Mark stack pointer
     public int ir;            // Instruction register
     public int pc;            // Program counter
+
+
   } // end Processor
 
   class PVM {
-
+ 
   // Machine opcodes - not all are used
 
     public const int
@@ -147,6 +149,10 @@ namespace Parva {
   // The processor
 
     static Processor cpu = new Processor();
+       
+    static public int GetHp(){
+      return cpu.hp;
+    }
 
     static Stopwatch timer = new Stopwatch();
 
